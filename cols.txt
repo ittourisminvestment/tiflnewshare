@@ -1,0 +1,5 @@
+company_investments has payment_method: false
+expenses has payment_method: true
+dividends has payment_method: true
+loans has payment_method: false
+investment_returns has payment_method: true

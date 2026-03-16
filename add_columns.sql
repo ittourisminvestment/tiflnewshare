@@ -1,0 +1,7 @@
+-- RUN THIS IN YOUR SUPABASE SQL EDITOR TO FIX THE SETTINGS SAVE --
+
+ALTER TABLE company_settings 
+ADD COLUMN IF NOT EXISTS default_interest_rate numeric DEFAULT 0,
+ADD COLUMN IF NOT EXISTS service_charge numeric DEFAULT 1,
+ADD COLUMN IF NOT EXISTS grace_period int DEFAULT 0,
+ADD COLUMN IF NOT EXISTS penalty_percent numeric DEFAULT 0;
