@@ -1,0 +1,19 @@
+name: Scheduled Repo Sync
+
+on:
+  schedule:
+    - cron: '0 * * * *' # Runs every hour
+  workflow_dispatch: # Allows you to run it manually
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync GitHub Repos
+        uses: repo-sync/github-sync@v2
+        with:
+          # Change ORIGINAL_REPO_NAME to the actual repo name acharyasailesh updates
+          source_repo: "https://github.com/acharyasailesh/promotermanagement.git"
+          source_branch: "main"
+          destination_branch: "main"
+          github_token: ${{ secrets.SYNC_TOKEN }}
