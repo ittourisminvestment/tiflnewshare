@@ -1745,7 +1745,6 @@ export default function SettingsPage() {
                             ? "rgba(239, 68, 68, 0.05)"
                             : "rgba(0,0,0,0.03)",
                         cursor: "move",
-                        zIndex: 100,
                         padding: 0,
                       }}
                     >
