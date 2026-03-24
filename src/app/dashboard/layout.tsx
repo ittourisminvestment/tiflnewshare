@@ -153,14 +153,21 @@ export default function DashboardLayout({
         .eq("id", user.id)
         .single();
 
-      // Fallback if roles table doesn't exist yet on the target DB
-      if (error && error.message?.includes("roles")) {
-        const { data: legacyData } = await supabase
+      // Fallback if roles table/column doesn't exist, or if relationship fails
+      if (error && (error.code === 'PGRST200' || error.message?.includes("roles") || error.message?.includes("relationship"))) {
+        const { data: legacyData, error: legacyError } = await supabase
           .from("profiles")
           .select("*")
           .eq("id", user.id)
           .single();
+          
+        if (legacyError && legacyError.code === 'PGRST116') {
+          console.error("Profile not found for this user in the profiles table.");
+        }
+        
         data = legacyData;
+      } else if (error && error.code === 'PGRST116') {
+         console.error("Profile not found for this user in the profiles table.");
       }
 
       if (data) setProfile(data as Profile);
