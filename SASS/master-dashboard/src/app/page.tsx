@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Database, ShieldCheck, Mail, Building, Key, Loader2, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
+import { Database, ShieldCheck, Mail, Building, Key, Loader2, ArrowRight, Users, Plus } from 'lucide-react';
 
 const PLAN_FEATURES: Record<string, { title: string; price: string; features: string[]; color: string; badge: string }> = {
   standard: {
@@ -118,10 +119,16 @@ export default function SetupWizard() {
             </div>
           </div>
 
-          <button onClick={() => setSuccessData(null)} className="btn w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-xl shadow transition-colors flex items-center justify-center gap-2">
-            Finish & Add Another
-            <ArrowRight size={18} />
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button onClick={() => setSuccessData(null)} className="flex-1 bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 font-bold py-3 px-4 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
+              Add Another
+              <Plus size={18} />
+            </button>
+            <Link href="/tenants" className="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 transform hover:-translate-y-0.5">
+              Go to Management Console
+              <Users size={18} />
+            </Link>
+          </div>
         </div>
       </div>
     );
