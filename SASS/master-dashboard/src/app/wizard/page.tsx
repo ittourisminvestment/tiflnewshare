@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Database, ShieldCheck, Mail, Building, Key, Loader2, ArrowRight, Users, Plus, Globe } from 'lucide-react';
 
 const PLAN_FEATURES: Record<string, { title: string; price: string; features: string[]; color: string; badge: string }> = {
-  standard: {
+  Startup: {
     title: 'Standard Level',
     price: 'Basic Package',
     badge: 'bg-indigo-100 text-indigo-700',
@@ -19,7 +19,7 @@ const PLAN_FEATURES: Record<string, { title: string; price: string; features: st
       'Security Access Control (Super Admin + Editor)',
     ]
   },
-  premium: {
+  Growth: {
     title: 'Premium Level',
     price: 'Advanced Package',
     badge: 'bg-purple-100 text-purple-700',
@@ -34,7 +34,7 @@ const PLAN_FEATURES: Record<string, { title: string; price: string; features: st
       'Dedicated PDF & CSV Report Exports'
     ]
   },
-  enterprise: {
+  'Enterprise (Unlimited)': {
     title: 'Enterprise Unlimited',
     price: 'Enterprise Grade',
     badge: 'bg-green-100 text-green-700',
@@ -61,7 +61,8 @@ export default function SetupWizard() {
     ceoName: '',
     website: '',
     databaseUrl: '',
-    planTier: 'standard'
+    planTier: 'Startup',
+    skipInitialization: false
   });
 
   const handleProvision = async (e: React.FormEvent) => {
@@ -107,10 +108,17 @@ export default function SetupWizard() {
                 <span className="font-semibold text-gray-800">{successData.tenant.company_name}</span>
               </div>
               <div>
-                <span className="block text-xs text-gray-400 mb-1">Generated License Key (Save this!)</span>
-                <code className="text-sm bg-indigo-50 text-indigo-700 px-3 py-2 rounded border border-indigo-100 block break-all font-mono">
+                <span className="block text-xs text-gray-400 mb-1 font-black uppercase tracking-widest">Active License Key</span>
+                <code className="text-sm bg-indigo-50 text-indigo-700 px-3 py-2 rounded-xl border border-indigo-100 block break-all font-mono font-bold">
                   {successData.license.license_key}
                 </code>
+                <div className="mt-4 p-4 bg-amber-50 rounded-xl border border-amber-100">
+                  <p className="text-[10px] font-black text-amber-700 uppercase mb-2">Instructions for Tenant Project:</p>
+                  <p className="text-[11px] text-amber-800 leading-relaxed font-medium">
+                    Add this key to your tenant's **.env** file as:<br/>
+                    <code className="font-bold">NEXT_PUBLIC_TENANT_LICENSE_KEY={successData.license.license_key}</code>
+                  </p>
+                </div>
               </div>
               <div>
                 <span className="block text-xs text-gray-400 mb-1">Tier</span>
@@ -261,11 +269,25 @@ export default function SetupWizard() {
                     onChange={(e) => setFormData({ ...formData, planTier: e.target.value })}
                     className="pl-10 block w-full outline-none sm:text-sm border-gray-300 rounded-xl border p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-gray-50/50 appearance-none pointer"
                   >
-                    <option value="standard">Standard Level</option>
-                    <option value="premium">Premium Level</option>
-                    <option value="enterprise">Enterprise (Unlimited)</option>
+                    <option value="Startup">Standard Level</option>
+                    <option value="Growth">Premium Level</option>
+                    <option value="Enterprise (Unlimited)">Enterprise (Unlimited)</option>
                   </select>
                 </div>
+              </div>
+
+              <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-4 group hover:bg-white hover:shadow-inner transition-all">
+                <input 
+                  type="checkbox" 
+                  id="skipInit"
+                  checked={formData.skipInitialization}
+                  onChange={(e) => setFormData({...formData, skipInitialization: e.target.checked})}
+                  className="w-5 h-5 accent-indigo-600 rounded cursor-pointer"
+                />
+                <label htmlFor="skipInit" className="text-sm font-bold text-gray-700 cursor-pointer">
+                  Skip Table Creation (Schema Already Exists)
+                  <span className="block text-[10px] text-gray-400 font-medium leading-tight mt-0.5">Check this if you are registering a project that already has our SQL tables installed.</span>
+                </label>
               </div>
             </div>
 

@@ -7,36 +7,35 @@ import { createClient } from '@supabase/supabase-js';
 
 export async function POST(req: Request) {
   try {
-    const { companyName, contactEmail, ceoName, website, databaseUrl, planTier } = await req.json();
+    const { companyName, contactEmail, ceoName, website, databaseUrl, planTier, skipInitialization } = await req.json();
 
     if (!companyName || !databaseUrl) {
       return NextResponse.json({ error: 'Company Name and Database URL are required' }, { status: 400 });
     }
 
-    // 1. Read the init_schema.sql blueprint
-    // We are expecting it to be available 2 levels above SASS/master-dashboard/src/app/api/provision
-    // Let's resolve it safely from process.cwd() assuming we run the app in master-dashboard/
-    const schemaPath = path.join(process.cwd(), '..', 'init_schema.sql');
-    
-    if (!fs.existsSync(schemaPath)) {
-      return NextResponse.json({ error: `init_schema.sql not found at ${schemaPath}` }, { status: 500 });
-    }
-
-    const schemaSql = fs.readFileSync(schemaPath, 'utf8').replace(/^\uFEFF/, '');
-
-    // 2. Connect to the Tenant's Blank Postgres Database
+    // Connect to the Tenant's Database
     const client = new Client({
       connectionString: databaseUrl,
-      ssl: { rejectUnauthorized: false } // Required for Supabase
+      ssl: { rejectUnauthorized: false }
     });
 
     await client.connect();
 
-    // 3. Execute the massive blueprint
+    // EXECUTE ONLY IF NOT SKIPPED
     try {
-      await client.query(schemaSql);
+      if (!skipInitialization) {
+        // 1. Read the massive blueprint
+        const schemaPath = path.join(process.cwd(), '..', 'init_schema.sql');
+        if (!fs.existsSync(schemaPath)) {
+          throw new Error(`init_schema.sql not found at ${schemaPath}`);
+        }
+        const schemaSql = fs.readFileSync(schemaPath, 'utf8').replace(/^\uFEFF/, '');
+
+        // 2. Execute the blueprint
+        await client.query(schemaSql);
+      }
       
-      // 4. Inject specific tenant data (update the company_settings logo/name)
+      // 3. Update company settings (works even if skipInitialization is true)
       await client.query(`
         UPDATE public.company_settings 
         SET company_name = $1, email = $2 
@@ -45,7 +44,7 @@ export async function POST(req: Request) {
 
     } catch (dbError: any) {
       await client.end();
-      return NextResponse.json({ error: `Schema Execution Error: ${dbError.message}` }, { status: 500 });
+      return NextResponse.json({ error: `Database Configuration Error: ${dbError.message}` }, { status: 500 });
     }
 
     await client.end();

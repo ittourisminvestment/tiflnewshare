@@ -142,6 +142,35 @@ export default function DashboardLayout({
       document.documentElement.setAttribute("data-theme", savedTheme);
     }
 
+    // SAAS LICENSE GUARD
+    const checkLicense = async () => {
+       if (process.env.NEXT_PUBLIC_SAAS_MODE !== 'true') return;
+
+       const licenseKey = process.env.NEXT_PUBLIC_TENANT_LICENSE_KEY;
+       const masterUrl = process.env.NEXT_PUBLIC_MASTER_API_URL || 'http://localhost:3001';
+
+       if (!licenseKey) {
+          router.push('/license-expired');
+          return;
+       }
+
+       try {
+          const res = await fetch(`${masterUrl}/api/license/validate`, {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ licenseKey })
+          });
+          const data = await res.json();
+          if (!data.valid) {
+             router.push('/license-expired');
+          }
+       } catch (error) {
+          console.error("Master API unreachable, skipping license re-validation.");
+          // We allow fallback if Master is down momentarily to prevent downtime
+       }
+    };
+    checkLicense();
+
     const fetchProfile = async () => {
       const {
         data: { user },
@@ -173,15 +202,21 @@ export default function DashboardLayout({
 
       if (data) setProfile(data as Profile);
 
-      const { data: settings } = await supabase
-        .from("company_settings")
-        .select("company_name, address, logo_url")
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .single();
-      
-      if (settings) {
-        setCompany(settings);
+      try {
+        const res = await fetch('/api/company');
+        if (res.ok) {
+          const settings = await res.json();
+          if (settings) setCompany(settings);
+        }
+      } catch (err) {
+        // Fallback: try direct supabase if API route fails
+        const { data: settings } = await supabase
+          .from("company_settings")
+          .select("company_name, address, logo_url")
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .single();
+        if (settings) setCompany(settings);
       }
     };
 
@@ -287,11 +322,11 @@ export default function DashboardLayout({
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <div className="sidebar-header">
           <Link href="/dashboard" className="sidebar-logo">
-            <div className={`sidebar-logo-icon ${company?.logo_url ? 'has-logo' : ''}`}>
+            <div className={`sidebar-logo-icon ${company?.logo_url ? 'has-logo' : ''}`} style={{ width: 42, height: 42 }}>
               {company?.logo_url ? (
-                <img src={company.logo_url} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                <img src={company.logo_url} alt={company.company_name + ' Logo'} />
               ) : (
-                company ? getInitials(company.company_name) : "GB"
+                <span style={{ fontSize: '18px' }}>{company ? getInitials(company.company_name) : 'GB'}</span>
               )}
             </div>
             <div>
