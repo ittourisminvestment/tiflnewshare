@@ -405,7 +405,7 @@ export default function SettingsPage() {
   const handleSaveCompany = async () => {
     if (!settings) return;
     setSaving(true);
-    const { error } = await supabase
+    const { error, count } = await supabase
       .from("company_settings")
       .update({
         company_name: settings.company_name,
@@ -425,12 +425,18 @@ export default function SettingsPage() {
         stamp_url: settings.stamp_url,
         certificate_bg_url: settings.certificate_bg_url,
         vat_no: settings.vat_no,
-      })
+      }, { count: 'exact' })
       .eq("id", settings.id);
-    if (error) toast.error(error.message);
-    else toast.success("Saved");
+    if (error) {
+      toast.error("Save failed: " + error.message);
+    } else if (count === 0) {
+      toast.error("Save blocked by permissions. Ask your Super Admin to update company settings, or run the RLS fix SQL in Supabase.");
+    } else {
+      toast.success("Company settings saved successfully!");
+    }
     setSaving(false);
   };
+
 
   const handleSaveCoords = async () => {
     if (!settings) return;

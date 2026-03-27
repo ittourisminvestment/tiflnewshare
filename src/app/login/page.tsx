@@ -13,20 +13,25 @@ export default function LoginPage() {
   const [company, setCompany] = useState<any>(null);
   const router = useRouter();
   const supabase = createClient();
+  const [companyLoading, setCompanyLoading] = useState(true);
 
   useEffect(() => {
     const fetchCompany = async () => {
-      const { data } = await supabase
-        .from('company_settings')
-        .select('company_name, address')
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .single();
-      
-      if (data) setCompany(data);
+      try {
+        // Use the server-side API route to bypass RLS (login page has no auth token yet)
+        const res = await fetch('/api/company');
+        if (res.ok) {
+          const data = await res.json();
+          setCompany(data);
+        }
+      } catch (err) {
+        console.warn('Could not fetch company info:', err);
+      } finally {
+        setCompanyLoading(false);
+      }
     };
     fetchCompany();
-  }, [supabase]);
+  }, []);
 
   const getInitials = (name: string) => {
     return name
@@ -60,21 +65,31 @@ export default function LoginPage() {
   return (
     <div className="login-page">
       <div className="login-bg">
+        <div className="mesh-gradient" />
         <div className="login-orb login-orb-1" />
         <div className="login-orb login-orb-2" />
         <div className="login-orb login-orb-3" />
       </div>
 
-      <div className="login-card">
+      <div className="login-card glass-card">
         <div className="login-header">
           <div className="login-logo">
-            <div className="sidebar-logo-icon" style={{ width: 48, height: 48, fontSize: 20 }}>
-              {company ? getInitials(company.company_name) : 'GB'}
-            </div>
+            {company?.logo_url ? (
+              <div className="sidebar-logo-icon has-logo" style={{ width: 56, height: 56 }}>
+                <img src={company.logo_url} alt={company.company_name + ' Logo'} />
+              </div>
+            ) : (
+              <div className="sidebar-logo-icon" style={{ width: 56, height: 56, fontSize: 22 }}>
+                {companyLoading ? '' : (company ? getInitials(company.company_name) : 'GB')}
+              </div>
+            )}
           </div>
-          <h1 className="login-title">{company?.company_name || 'Global Bihani Investment'}</h1>
+          <h1 className="login-title">
+            {companyLoading ? '\u00A0' : (company?.company_name || 'Investment Management System')}
+          </h1>
           <p className="login-subtitle">Admin Management System</p>
         </div>
+
 
         <form onSubmit={handleLogin} className="login-form">
           <div className="input-group">
@@ -119,7 +134,7 @@ export default function LoginPage() {
         </form>
 
         <p className="login-footer">
-          Pokhara, Newroad &bull; Secure Admin Portal
+          {company?.address || 'Secure Admin Portal'} &bull; Secure Admin Portal
         </p>
       </div>
 
@@ -131,92 +146,130 @@ export default function LoginPage() {
           justify-content: center;
           position: relative;
           overflow: hidden;
+          background: #050508;
         }
         .login-bg {
           position: fixed;
           inset: 0;
           pointer-events: none;
+          z-index: 0;
+        }
+        .mesh-gradient {
+          position: absolute;
+          inset: 0;
+          background-image: 
+            radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+            radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+            radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+          opacity: 0.5;
         }
         .login-orb {
           position: absolute;
           border-radius: 50%;
-          filter: blur(100px);
-          opacity: 0.4;
+          filter: blur(120px);
+          opacity: 0.3;
         }
         .login-orb-1 {
-          width: 400px;
-          height: 400px;
-          background: #6366f1;
+          width: 500px;
+          height: 500px;
+          background: #4f46e5;
           top: -10%;
-          right: -5%;
-          animation: float 8s ease-in-out infinite;
-        }
-        .login-orb-2 {
-          width: 300px;
-          height: 300px;
-          background: #8b5cf6;
-          bottom: -5%;
-          left: -5%;
-          animation: float 10s ease-in-out infinite reverse;
-        }
-        .login-orb-3 {
-          width: 200px;
-          height: 200px;
-          background: #a78bfa;
-          top: 40%;
-          left: 50%;
+          right: -10%;
           animation: float 12s ease-in-out infinite;
         }
+        .login-orb-2 {
+          width: 400px;
+          height: 400px;
+          background: #8b5cf6;
+          bottom: -10%;
+          left: -10%;
+          animation: float 15s ease-in-out infinite reverse;
+        }
+        .login-orb-3 {
+          width: 300px;
+          height: 300px;
+          background: #e11d48;
+          top: 40%;
+          left: 50%;
+          animation: float 18s ease-in-out infinite;
+        }
         @keyframes float {
-          0%, 100% { transform: translateY(0) scale(1); }
-          50% { transform: translateY(-30px) scale(1.05); }
+          0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+          33% { transform: translateY(-40px) rotate(10deg) scale(1.1); }
+          66% { transform: translateY(20px) rotate(-10deg) scale(0.9); }
         }
         .login-card {
-          background: rgba(22, 22, 31, 0.85);
-          backdrop-filter: blur(24px);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 20px;
-          padding: 48px 40px;
+          padding: 56px 48px;
           width: 100%;
-          max-width: 420px;
+          max-width: 440px;
           position: relative;
           z-index: 10;
-          box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+          border-radius: 28px;
+          animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(30px); }
+          to { opacity: 1; transform: translateY(0); }
         }
         .login-header {
           text-align: center;
-          margin-bottom: 36px;
+          margin-bottom: 40px;
         }
         .login-logo {
           display: flex;
           justify-content: center;
-          margin-bottom: 16px;
+          margin-bottom: 24px;
         }
         .login-title {
-          font-size: 22px;
-          font-weight: 700;
-          letter-spacing: -0.3px;
-          margin-bottom: 4px;
+          font-size: 28px;
+          font-weight: 800;
+          letter-spacing: -1px;
+          margin-bottom: 8px;
+          color: #ffffff;
         }
         .login-subtitle {
-          font-size: 14px;
-          color: var(--text-muted);
+          font-size: 15px;
+          color: #94a3b8;
+          font-weight: 500;
         }
         .login-form {
           display: flex;
           flex-direction: column;
-          gap: 18px;
+          gap: 24px;
+        }
+        .input-group label {
+          font-size: 13px;
+          font-weight: 600;
+          color: #94a3b8;
+          margin-bottom: 8px;
+          display: block;
+        }
+        .input {
+          height: 48px !important;
+          background: rgba(15, 23, 42, 0.6) !important;
+          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          border-radius: 12px !important;
+          color: #fff !important;
+          font-size: 15px !important;
+          padding: 0 16px !important;
+          transition: all 0.3s ease !important;
+        }
+        .input:focus {
+          border-color: #4f46e5 !important;
+          background: rgba(15, 23, 42, 0.8) !important;
+          box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.2) !important;
         }
         .login-footer {
           text-align: center;
-          font-size: 12px;
+          font-size: 13px;
           color: var(--text-muted);
-          margin-top: 28px;
+          margin-top: 40px;
+          line-height: 1.6;
         }
         @media (max-width: 480px) {
           .login-card {
-            margin: 16px;
-            padding: 32px 24px;
+            margin: 20px;
+            padding: 40px 24px;
           }
         }
       `}</style>
